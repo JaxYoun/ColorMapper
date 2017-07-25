@@ -13,11 +13,11 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
 
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.log4j.Logger;
-import org.json.JSONException;
 import org.json.JSONObject;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
@@ -30,9 +30,6 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.demo.util.PropertiesUtil;
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
@@ -59,8 +56,8 @@ public class ColorMapController {
 	private static final String WIN_X64_DLL_PATH = "opencv_java320_x64.dll";
 	private static final String WIN_X86_DLL_PATH = "opencv_java320_x86.dll";
 	
-	private static String srcDir;
-	private static String destDir;
+//	private static String srcDir;
+//	private static String destDir;
 	
 	private static String post;
 	
@@ -107,8 +104,8 @@ public class ColorMapController {
 				System.load(tempDll.getAbsolutePath());  //jvm加载动态链接库
 				tempDll.deleteOnExit();
 				
-				srcDir = PropertiesUtil.getPropMap().get("srcDir");
-				destDir = PropertiesUtil.getPropMap().get("destDir");
+//				srcDir = PropertiesUtil.getPropMap().get("srcDir");
+//				destDir = PropertiesUtil.getPropMap().get("destDir");
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -131,18 +128,24 @@ public class ColorMapController {
 		return "<b>Hello World!</b>";
 	}
 	
+	@SuppressWarnings("rawtypes")
 	@ResponseBody
 	@PostMapping(value="/postTest")  //限定POST请求
-	public String postTest(@RequestBody String json) throws Exception {
+	public String postTest(@RequestBody String json) {
 //		ObjectMapper jacksonMapper = new ObjectMapper();
-		JSONObject obj = jacksonMapper.readValue(json, JSONObject.class);
-		System.err.println(obj.get("originImagePath"));
+		try {
+			HashMap mapObj = jacksonMapper.readValue(json, HashMap.class);
+			System.err.println(mapObj.get("originImagePath"));
+			System.err.println(mapObj.get("id"));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 		return "postTest";
 	}
 	
-	@RequestMapping("/colorMapping")
+	@RequestMapping(value = "/colorMapping", method = RequestMethod.POST)
 	public String colorMapping(String originImagePath, String new_path, Integer colorMapCode) {
-		logger.info("**********originImagePath=" + originImagePath);
+		logger.info("START**********originImagePath=" + originImagePath);
 		logger.info("**********new_path=" + new_path);
 		logger.info("**********colorMapCode=" + colorMapCode);
 		return convert(originImagePath, new_path, colorMapCode);
@@ -150,20 +153,25 @@ public class ColorMapController {
 
 	public static String convert(String originImagePath, String new_path, int colorMapCode) {
 		String result = null;
+		Mat originMat = null;
+		Mat destinMat = null;
 		try {
-			Mat originMat = Imgcodecs.imread(originImagePath); // 读取原图像
-			Mat destinMat = new Mat(originMat.rows(), originMat.cols(), CvType.CV_8UC3); // 新建目标输出图像
+			originMat = Imgcodecs.imread(originImagePath); // 读取原图像
+			destinMat = new Mat(originMat.rows(), originMat.cols(), CvType.CV_8UC3); // 新建目标输出图像
 
 //			String destPath = destDir + originImagePath.substring(originImagePath.lastIndexOf(File.separator), originImagePath.lastIndexOf('.')) + "_" + colorMapCode + originImagePath.substring(originImagePath.lastIndexOf('.'));
 			Imgproc.applyColorMap(originMat, destinMat, colorMapCode); // 执行图像彩色空间映射
 			Imgcodecs.imwrite(new_path, destinMat); // 将转换结果写入到磁盘
 			
 			result = "{'status': 'ok', 'imgPath': '" + new_path + "'}";
-			logger.info("**********" + originImagePath + " SUCCESS**********");
+			logger.info("END**********" + originImagePath + " SUCCESS**********");
 		} catch (Exception e) {
 			result = "{'status': 'error', 'imgPath': ''}";
-			logger.error("**********" + originImagePath + " FAILED**********");
+			logger.error("END**********" + originImagePath + " FAILED**********");
 			e.printStackTrace();
+		}finally{
+			originMat.release();
+			destinMat.release();
 		}
 		
 		return result;
