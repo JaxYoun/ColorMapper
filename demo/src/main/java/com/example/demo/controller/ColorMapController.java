@@ -127,8 +127,8 @@ public class ColorMapController {
 		return "<b>Hello World!</b>";
 	}
 	
-	@SuppressWarnings("rawtypes")
 	@ResponseBody
+	@SuppressWarnings("rawtypes")
 	@PostMapping(value="/postTest")  //限定POST请求
 	public String postTest(@RequestBody String json) {
 //		ObjectMapper jacksonMapper = new ObjectMapper();
