@@ -16,7 +16,7 @@ public class TimeClient {
 		EventLoopGroup workerGroup = new NioEventLoopGroup();
 		try {
 			/**
-			 * 如果你只指定了一个EventLoopGroup， 那他就会即作为一个‘boss’线程， 也会作为一个‘workder’线程，
+			 * 如果你只指定了一个EventLoopGroup， 那他就会既作为一个‘boss’线程， 也会作为一个‘workder’线程，
 			 * 尽管客户端不需要使用到‘boss’线程。
 			 */
 			Bootstrap b = new Bootstrap(); // (1)
